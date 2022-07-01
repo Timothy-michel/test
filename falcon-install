@@ -1,0 +1,100 @@
+#!/bin/zsh
+
+# set vars
+install_version = "6.41.15404"
+install_file = "Falcon/GovLaggar_Release_standard-p_15404.pkg"
+URL="https://nexus.il2.gamewarden.io/repository/secondfront-binaries/Falcon/${install_file}"
+iFILE=$(basename $URL)
+install_dir="/tmp/falcon"
+
+function del_installer {
+    echo "Deleting installer..."
+    pushd $install_dir
+    rm $(basename $URL)
+    echo "...done\n"
+}
+
+function dl_installer {
+    pushd $install_dir
+    if [[ -a $(basename $URL) ]]
+    then
+        echo "Installer file exists"
+        del_installer
+    fi
+
+    echo "\nDownloading installer..."
+    
+    wget -q --show-progress $URL
+    popd
+    echo "...done\n"
+}
+
+function mac_install {
+    echo "\nInstalling Falcon..."
+    if [ ! -d "$install_dir" ]
+    then
+        mkdir $install_dir
+    fi
+    pushd $install_dir
+    dl_installer
+    sudo installer -verboseR -package $iFILE -target /
+    mac_falconctl license ED40201BD51D477FB52CFAB6911AAF88-6D
+    popd
+    echo "...done\n"
+
+    echo "\nLinking script..."
+    ln -s $PWD/$ZSH_ARGZERO /usr/local/bin/$ZSH_ARGZERO
+    echo "...done\n"
+}
+
+function mac_remove {
+    echo "\nRemoving links..."
+    unlink /usr/local/bin/$ZSH_ARGZERO
+
+    echo "\nRemoving Falcon..."
+    # sudo installer -verboseR -package $iFILE -target /
+    sudo /Applications/Falcon.app/Contents/Resources/falconctl uninstall --maintenance-token
+    if [ $? != 0 ]
+    then
+        sudo /Applications/Falcon.app/Contents/Resources/falconctl uninstall
+    fi
+    echo "...done\n"
+}
+
+function mac_falconctl {
+    if [ ! -z "$2" ]   # If 2nd param is not null
+    then
+        sudo /Applications/Falcon.app/Contents/Resources/falconctl $1 $2
+    elif [[ $1 == "version" ]]
+    then
+        sudo /Applications/Falcon.app/Contents/Resources/falconctl stats | grep 'version:'
+    else
+        sudo /Applications/Falcon.app/Contents/Resources/falconctl $1
+    fi
+}
+
+case "$1" in
+    download)
+        dl_installer
+        ;;
+    install)
+        mac_install
+        ;;
+    remove)
+        mac_remove
+        ;;
+    delete)
+        del_installer
+        ;;
+    *)
+        if [ ! -z "$2" ]   # If 2nd param is not null
+        then
+            mac_falconctl $1 $2
+        elif [ ! -z "$1" ] # If 1st param is not null
+        then
+            mac_falconctl $1
+        else
+            mac_install
+        fi
+        ;;
+esac
