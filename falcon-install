@@ -38,7 +38,7 @@ function mac_install {
     pushd $install_dir
     dl_installer
     sudo installer -verboseR -package $iFILE -target /
-    mac_falconctl license ED40201BD51D477FB52CFAB6911AAF88-6D
+    mac_falconctl license 119B52EB4105468FAF6317B951834A96-66
     popd
     echo "...done\n"
 
